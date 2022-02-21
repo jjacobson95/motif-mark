@@ -1,5 +1,7 @@
 #!/usr/bin/env python
+from tracemalloc import start
 import cairo
+import random
 
 #from itertools import count
 import argparse
@@ -67,6 +69,7 @@ class Gene:
             if (item != holder_val):
                 self.swap_points.append(index)
                 holder_val = (the_query[index])
+        self.swap_points.append(self.seq_length)
 
 
 class Motif:
@@ -83,6 +86,7 @@ class Motif:
         self.thickness = len(m_sequence)
         self.associated_gene = gene_name
         self.associated_figure = figure_number
+        self.colors = []
     # def scanner(self):
     #     kmer_length = len(self.type)
     #     for index, chunk in enumerate(self.gene_sequence):
@@ -100,6 +104,10 @@ class Motif:
                         self.position.append(index)
                 else:
                     break
+    def random_color_generator(self):
+        self.colors.append(random.random())
+        self.colors.append(random.random())
+        self.colors.append(random.random())
                 
 
 nucleotide_dict = { "A" : ["A", "W", "M", "R", "D", "H", "V", "N"],
@@ -214,6 +222,7 @@ for value in motif_files_dict.values():
 
 for motif in motif_holder:
     motif.scanner()
+    motif.random_color_generator()
 
 
 for value in fasta_files_dict.values():
@@ -223,10 +232,10 @@ for value in fasta_files_dict.values():
         for motif in motif_holder:
             if motif.associated_gene == the_gene.name and motif.associated_figure == the_gene.figure_ID:
                 if motif.position != []:
-                    # print(motif.type)
-                    # print(motif.associated_gene)
-                    # print(motif.position)
-                    pass
+                    print(motif.type)
+                    print(motif.associated_gene)
+                    print(motif.position)
+
 
 
 
@@ -259,39 +268,80 @@ class Figure:
                         if motif.position != []:
                             self.motif_list.append(motif)
     def beautiful_creation(self):
-        for gene in self.gene_list:
-            #diplay gene name
-            stretch_factor = 500/gene.seq_length
-            start = 25
-            if gene.start_as == "intron":
-                thin_section_start = 25
-                intron_start = True
-            else:
-                thick_section_start = 25
-                intron_start = False
+        spacer = 0
         height = (200 * len(self.gene_list))
-        surface = cairo.PDFSurface("plot.pdf", 500, height)
+        surface = cairo.PDFSurface("test_plot.pdf",1500, height)
         context = cairo.Context(surface)
         context.set_line_width(1)
-        context.move_to(450,25)
-        context.line_to(450,325)
-        context.rectangle(50,50,300,350)
-        context.stroke()
-        surface.write_to_png("plot.png")
+        start_x = 50
+        start_y = 150
+        for gene in self.gene_list:
+            context.set_font_size(40)
+            context.move_to(40 , 50)
+            figure_name = ("Figure " + str(gene.figure_ID))
+            context.show_text(figure_name)
+            #diplay gene name here
+            current_x = start_x 
+            current_y = start_y + spacer
+            number_of_segments = range(len(gene.swap_points))
+            context.move_to(current_x+50 , current_y)
+            context.set_font_size(20)
+            context.show_text(gene.name)
+            current_y = start_y + spacer + 40
+            if gene.start_as == "Intron":
+                intron_at_current_step= True
+            else:
+                intron_at_current_step = False
+            for segment in number_of_segments:
+                #stretch_factor = 500/gene.seq_length
+                for motif in self.motif_list:
+                    if motif.associated_gene == gene.name and motif.associated_figure == gene.figure_ID:
+                        for position in motif.position:
+                            context.set_source_rgb(motif.colors[0],motif.colors[1],motif.colors[2])
+                            context.rectangle(position+start_x,current_y-15,motif.thickness,30)
+                            context.fill()
+                context.move_to(current_x,current_y)
+                if intron_at_current_step == True:
+                    context.set_source_rgb(.5, .5, .1)
+                    current_x = start_x + gene.swap_points[segment]
+                    context.line_to(current_x,current_y)
+                    context.stroke()
+                    intron_at_current_step = False
+                    continue
+                if intron_at_current_step == False:
+                    context.set_source_rgb(0,0,0)
+                    context.rectangle(current_x,current_y-15,gene.swap_points[segment]-current_x+start_x,30)
+                    context.fill()
+                    current_x = start_x + gene.swap_points[segment]
+                    intron_at_current_step = True
+                    continue
+                
+            spacer += 120
+                #Add motifs in previous sections
+
+        surface.write_to_png("test_plot.png")
         surface.finish()
+
+            
+
+
+        # context.move_to(450,25)
+        # context.line_to(450,325)
+        # context.rectangle(50,50,300,350)
+        # context.stroke()
+        # surface.write_to_png("plot.png")
+        # surface.finish()
 
 
             
 
 
-
-
-self.sequence = the_sequence
-        self.start_as = ""
-        self.swap_points = []
-        self.seq_length = 0
-        self.name = gene_name
-        self.figure_ID = figure_number
+# self.sequence = the_sequence
+#         self.start_as = ""
+#         self.swap_points = []
+#         self.seq_length = 0
+#         self.name = gene_name
+#         self.figure_ID = figure_number
 
 
 
@@ -311,21 +361,22 @@ for figure in figures:
     figure.find_gene_and_motif_lists()
 
 
-print(figures[1].gene_list)
-print(figures[1].motif_list)
+# print(figures[1].gene_list)
+# print(figures[1].motif_list)
+
+for figure in figures:
+    figure.beautiful_creation()
 
 
 
-
-
-# surface = cairo.PDFSurface("plot.pdf", 1000, 1000)
+# surface = cairo.PDFSurface("plotxx.png", 1000, 1000)
 # context = cairo.Context(surface)
 # context.set_line_width(1)
 # context.move_to(450,25)
 # context.line_to(450,325)
 # context.rectangle(50,50,300,350)
 # context.stroke()
-# surface.write_to_png("plot.png")
+# surface.write_to_png("plotxx.png")
 # surface.finish()
 
 
@@ -344,3 +395,5 @@ print(figures[1].motif_list)
         # self.seq_length = 0
         # self.name = gene_name
         # self.figure_ID = figure_number
+
+
