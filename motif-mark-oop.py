@@ -1,11 +1,7 @@
 #!/usr/bin/env python
-from tracemalloc import start
 import cairo
 import random
 import argparse
-from ctypes.wintypes import HACCEL
-from operator import truediv
-from pickle import FALSE
 import sys
 
 
@@ -22,9 +18,24 @@ args = parser.parse_args()
 fasta_files = args.files
 motif_files = args.motifs
 
+print("""
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░███╗   ███╗ █████╗ ████████╗██╗███████╗  ███╗   ███╗ █████╗ ██████╗ ██╗  ██╗░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░████╗ ████║██╔══██╗╚══██╔══╝██║██╔════╝  ████╗ ████║██╔══██╗██╔══██╗██║ ██╔╝░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░██╔████╔██║██║  ██║   ██║   ██║█████╗    ██╔████╔██║███████║██████╔╝█████═╝░░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░██║╚██╔╝██║██║  ██║   ██║   ██║██╔══╝ ░  ██║╚██╔╝██║██╔══██║██╔══██╗██╔═██╗░░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░██║ ╚═╝ ██║╚█████╔╝ ░ ██║ ░ ██║██║   ░░  ██║ ╚═╝ ██║██║  ██║██║  ██║██║ ╚██╗░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░╚═╝ ░ ░ ╚═╝ ╚════╝  ░ ╚═╝ ░ ╚═╝╚═╝  ░░░  ╚═╝ ░ ░ ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
+""")
+
+
 #progress / exit statements
-print(" \nMotif Mark can process any number of Fasta and Motif files with any number of Genes and up to 18 Motifs. \n")
+print("-------------\n----------\n-------\n----\n")
+print("Motif Mark can process any number of Fasta and Motif files with any number of Genes and up to 18 Motifs. \n")
 print("Unused Motifs will not appear in figure legends.")
+print("Output Figures will be named in order of matching files read in.\n")
 if len(motif_files) != len(fasta_files):
     print("Number of Motif files must be equal to the number of Fasta files. \n Number of Fasta files found: ", len(fasta_files), "\n Number of Motif files found: ", len(motif_files))
     sys.exit("Please Try Again.")
@@ -146,9 +157,11 @@ class Figure:
         self.fig_num = figure_number
         self.gene_list = []
         self.motif_list = []
+        self.longest_seq = 0
         """
         Class Figure: This contains the gene list, and motif list. These lists hold instances from the gene and motif class.
         Methods: find_gene_and_motif_lists: Generates gene and motif subsets for this figure from preexisting comprehensive lists.
+                 find_longest_sequence: This is used to generate the figure width.
                  beautiful_creation: Create a figure based on all of the previously gathered information.
         """
     def find_gene_and_motif_lists(self):
@@ -159,11 +172,16 @@ class Figure:
                     if motif.associated_gene == gene.name and motif.associated_figure == gene.figure_ID == self.fig_num:
                         if motif.position != []:
                             self.motif_list.append(motif)
+    def find_longest_sequence(self):
+        for gene in fasta_files_list[self.fig_num-1]:
+            if gene.seq_length > self.longest_seq:
+                self.longest_seq = gene.seq_length 
     def beautiful_creation(self):
         spacer = 0
-        height = (200 * len(self.gene_list))
+        height = (175 * len(self.gene_list) + 100)
+        width = self.longest_seq + 400
         figure_file_name = ("Figure_") + str(self.fig_num) + (".png")
-        surface = cairo.ImageSurface(self.fig_num,1500, height)
+        surface = cairo.ImageSurface(self.fig_num,width, height)
         context = cairo.Context(surface)
         context.set_line_width(1)
         start_x = 50
@@ -172,7 +190,7 @@ class Figure:
         for gene in self.gene_list:
             context.set_font_size(40)
             context.move_to(40 , 50)
-            context.set_source_rgb(255,255,255)
+            context.set_source_rgb(1,1,1)
             figure_name = ("Figure " + str(gene.figure_ID))
             context.show_text(figure_name)
             current_x = start_x 
@@ -190,9 +208,10 @@ class Figure:
                 reset = False
                 #stretch_factor = 500/gene.seq_length
                 context.move_to(current_x,current_y)
-                context.set_source_rgb(255,255,255)
+                context.set_source_rgb(1,1,1)
                     #Create Introns
                 if intron_at_current_step == True and reset == False:
+                    context.set_line_width(1)
                     current_x = start_x + gene.swap_points[segment]
                     context.line_to(current_x,current_y)
                     context.stroke()
@@ -201,7 +220,11 @@ class Figure:
                     #Create Exons
                 if intron_at_current_step == False and reset == False:
                     context.rectangle(current_x,current_y-15,gene.swap_points[segment]-current_x+start_x,30)
-                    context.fill()
+                    context.set_source_rgb(1,1,1)
+                    context.fill_preserve()
+                    context.set_source_rgb(.721,.525,.0431)
+                    context.set_line_width(1.75)
+                    context.stroke()
                     current_x = start_x + gene.swap_points[segment]
                     intron_at_current_step = True
                     reset = True
@@ -212,9 +235,9 @@ class Figure:
                         for position in motif.position:
                             context.rectangle(position+start_x,current_y-10,motif.thickness,20)
                             context.fill()
-            spacer += 120 
+            spacer += 140 
            #Create Legend 
-        legend_region_x = 1200
+        legend_region_x = width - 300
         legend_region_y = 100       
         legend_x_position =  legend_region_x  
         legend_y_position = legend_region_y
@@ -230,7 +253,8 @@ class Figure:
                 used_motifs.append(motif.type)
         surface.write_to_png(figure_file_name)
         surface.finish()
-
+        context.set_source_rgb(0.0, 0.0, 0.0)
+        context.set_operator(cairo.OPERATOR_CLEAR)
 
 
 
@@ -240,8 +264,6 @@ class Figure:
 # Then I'll create motif objects
 # Then, I'll join them together in figure objects
 # Last I'll run my figure.beautiful creation function to generate PNG images.
-
-
 
 
 # GENES:
@@ -289,7 +311,7 @@ for value in fasta_files_dict.values():
          gene.IE_pos()
 
 
-
+print(" Gene library generated.")
 
 # MOTIFS:
 # Create motifs dictionary. Key = motif_file_X, value = list(file pointer)
@@ -314,7 +336,6 @@ for value in motif_files_dict.values():
         line = line.strip()
         motif_list.append(line)
     value.append(motif_list)
-    print("line: ",motif_list)
     motif_files_list.append(motif_list)
 
 #Generate motif instances
@@ -327,9 +348,9 @@ for number in iterations_to_do:
             temp_list.append((Motif(motif,gene.sequence,gene.name,gene.figure_ID)))
         motif_holder.append(temp_list)
 
-
 #Generate motif attributes
 reset_color = False
+counter = 0
 for motif_list in motif_holder:
     if reset_color == True:
         counter = 0
@@ -339,7 +360,7 @@ for motif_list in motif_holder:
         counter +=1
     reset_color = True
 
-
+print(" Motif library generated.")
 #FIGURES:
 #Create list that holds figure instances
 figures = []
@@ -348,25 +369,19 @@ for stuff in range(len(fasta_files_dict)):
     figures.append(Figure(stuff))
 
 #Creation of end product.
+counter = 1
 for figure in figures:
     figure.find_gene_and_motif_lists()
+    figure.find_longest_sequence()
     figure.beautiful_creation()
+    print(" Figure ", counter, " complete!")
+    counter +=1
     
-
-
-
-
-
-
+print("\nCurrent bug: Figures beyond Figure 1 may be in black and white.")
     #To DO
-        #set good color for gene box.
-        #Set approriate overall width.
-        #annotate
-        #add nice progress report statements
-  
-
      #Order of things to work on:
         #2: make figure 2 have color.   
 
 
-
+print("\n----\n-------\n----------\n-------------")
+print("Author: Jeremy Jacobson\n") 
