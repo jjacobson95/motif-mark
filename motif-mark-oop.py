@@ -3,6 +3,7 @@ import cairo
 import random
 import argparse
 import sys
+import os
 
 
 #I don't know where half of the imported modules came from. But they are there and it works so I'm keeping them.
@@ -17,6 +18,7 @@ parser.add_argument('-m', '--motifs', help="Input motif files in corresponding o
 args = parser.parse_args()
 fasta_files = args.files
 motif_files = args.motifs
+
 
 print("""
 ░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░░
@@ -40,7 +42,7 @@ if len(motif_files) != len(fasta_files):
     print("Number of Motif files must be equal to the number of Fasta files. \n Number of Fasta files found: ", len(fasta_files), "\n Number of Motif files found: ", len(motif_files))
     sys.exit("Please Try Again.")
 else:
-    print("Number of Motif files is equal to the number of Fasta Files. Proceeding. \n Number of Fasta files found: ", len(fasta_files), "\n Number of Motif files found: ", len(motif_files))
+    print("Number of Motif files is equal to the number of Fasta Files. \n Proceeding. \n Number of Fasta files found: ", len(fasta_files), "\n Number of Motif files found: ", len(motif_files))
 
 
 #
@@ -153,8 +155,9 @@ class Motif:
 
 
 class Figure:
-    def __init__(self, figure_number):
+    def __init__(self, figure_number, figure_name):
         self.fig_num = figure_number
+        self.fig_name = figure_name
         self.gene_list = []
         self.motif_list = []
         self.longest_seq = 0
@@ -180,7 +183,7 @@ class Figure:
         spacer = 0
         height = (175 * len(self.gene_list) + 100)
         width = self.longest_seq + 400
-        figure_file_name = ("Figure_") + str(self.fig_num) + (".png")
+        figure_file_name = self.fig_name + ".png"
         surface = cairo.ImageSurface(self.fig_num,width, height)
         context = cairo.Context(surface)
         context.set_line_width(1)
@@ -191,8 +194,7 @@ class Figure:
             context.set_font_size(40)
             context.move_to(40 , 50)
             context.set_source_rgb(1,1,1)
-            figure_name = ("Figure " + str(gene.figure_ID))
-            context.show_text(figure_name)
+            context.show_text(self.fig_name)
             current_x = start_x 
             current_y = start_y + spacer
             number_of_segments = range(len(gene.swap_points))
@@ -268,16 +270,15 @@ class Figure:
 
 # GENES:
 # Create Genes dictionary. Key = fasta_file_X, value = list(file pointer)
-counter = 1
+
 number_of_genes_files = []
 for x in fasta_files:
-    number_of_genes_files.append(counter)
-    counter +=1
+    number_of_genes_files.append(x.name)
     
 fasta_files_dict = {}
 counter = 0
 for i in number_of_genes_files:
-    fasta_files_dict['fasta_file_%s' % i] = [fasta_files[counter]]
+    fasta_files_dict[os.path.splitext(i)[0]] = [fasta_files[counter]]
     counter +=1
 
 # Update Genes dictionary. Key = fasta_file_X, value = list(file pointer, [gene objects])
@@ -364,9 +365,10 @@ print(" Motif library generated.")
 #FIGURES:
 #Create list that holds figure instances
 figures = []
-for stuff in range(len(fasta_files_dict)):
-    stuff +=1
-    figures.append(Figure(stuff))
+counter = 1
+for f_files in fasta_files_dict:
+    figures.append(Figure(counter,f_files))
+    counter +=1
 
 #Creation of end product.
 counter = 1
@@ -374,10 +376,10 @@ for figure in figures:
     figure.find_gene_and_motif_lists()
     figure.find_longest_sequence()
     figure.beautiful_creation()
-    print(" Figure ", counter, " complete!")
+    print(" ", figure.fig_name, " complete!")
     counter +=1
     
-print("\nCurrent bug: Figures beyond Figure 1 may be in black and white.")
+print("\nCurrent bug: Figures beyond the first may be in black and white.")
     #To DO
      #Order of things to work on:
         #2: make figure 2 have color.   
