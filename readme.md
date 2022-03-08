@@ -4,8 +4,8 @@ Create Motif Mark png images using Cairo.
   
   
 Command line arguments:   
--f = fasta file(s)    
--m = motif file(s)   
+-f   =  fasta file(s)    
+-m   =  motif file(s)   
   
 Example Usage:  
   
