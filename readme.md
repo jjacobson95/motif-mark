@@ -13,7 +13,7 @@ Example Usage:
   
 This example will generate two motif mark figures.    
   
-  
+<br/>    
 Limitations:   
 - Up to 18 different motifs may be included, 10 or less is recommended.   
 - Any number of genes per file is accepted.  
